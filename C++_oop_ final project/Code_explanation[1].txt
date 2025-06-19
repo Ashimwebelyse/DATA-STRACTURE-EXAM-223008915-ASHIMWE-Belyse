@@ -1,0 +1,196 @@
+
+                                        Student  Grading  System project
+
+The Student Grading System is a well-structured C++ program that leverages key object-oriented programming concepts—abstraction, inheritance, polymorphism, and dynamic memory management—to handle student data and compute their GPAs effectively. Below is a comprehensive explanation of how each task is achieved and how the system functions line by line:
+  
+#include <iostream> library for input/output(e.g cin,cout)
+ #include <cstring> library for c-style string functions (e.g strcpy,strcmp)
+#include <iomanip>  library for input/output  formatting (e.g,setw)
+#include <cstdio> for printf,scanf(c-style I/o)
+
+using namespace std; To avoid repeated ‘std::’
+
+8.Structures and classes
+The program starts by defining a struct named Score, which serves as a basic building block to hold information about a course and the mark a student obtained. It contains two members:
+ struct Score {
+    char course[20];  : course name (max 19 chars + null terminator)
+    float mark;       : mark for the course
+};
+13.Abstract base class Person contains a pure virtual function
+class Person {
+public:
+  virtual void showInfo() = 0;:pure virtual function (abstract class)
+  virtual ~Person() {} : virtual destructor for proper cleanup
+};
+19. Student class derived from Person
+class Student : public Person {
+    char id[10];   : student ID(max 9 characters +’\0’)
+    Score* scores;   : dynamic array of course scores
+    int scoreCount; : number of courses
+
+25.  Constructor: to allocates and copies scores
+Public:
+ Student(const char* _id, Score* _scores, int _count) {
+        strcpy(id, _id); : copy id
+        scoreCount = _count; :save score count
+        scores = new Score[scoreCount]; : allocate memory for scores
+        for (int i = 0; i < scoreCount; ++i)
+            scores[i] = _scores[i];  : copy each score
+    }
+33.Destructor: free dynamically allocated memory
+    ~Student() {
+        delete[] scores; :free memory for scores
+    }
+37.Compute GPA as average of all marks using pointer arithmetic
+    float computeGPA() {
+        float total = 0;
+        Score* ptr = scores;
+        for (int i = 0; i < scoreCount; ++i)
+            total += (ptr + i)->mark;  : sum up marks
+        return scoreCount ? total / scoreCount : 0; :return average
+    }
+
+45. Show student info and GPA (overridden from Person)
+    void showInfo() override {
+        cout << "ID: " << id << "\nCourses:\n";
+        for (int i = 0; i < scoreCount; ++i)
+            printf(" - %-15s : %.2f\n", scores[i].course, scores[i].mark);
+        printf("GPA: %.2f\n\n", computeGPA()); :display GPA
+    }
+
+ 52.   Return the student ID (for searching/removal)
+    const char* getId() const {
+        return id;: Return the student ID (for searching/removal)
+    }
+};
+57.Global array of Person pointers (to hold Student objects)
+Person** people = nullptr;  : dynamic array of Person pointers
+int personCount = 0;  : number of people in the array
+
+ 60. Function to add a student to the array
+void addStudent(Student* student) {
+      Person** temp = new Person*[personCount + 1];: create a new large array
+      for (int i = 0; i < personCount; ++i) :copy old pointers
+             temp[i] = people[i];:copy old pointers
+    temp[personCount] = student;:add new student
+    delete[] people; :Replace the old array with the new
+    people = temp;:point to new array
+    personCount++; :increase count
+}
+70. Function to remove a student by ID
+void removeStudent(const char* id) {
+    int index = -1;
+
+ 72.Find the index of the student with the given ID
+    for (int i = 0; i < personCount; ++i) {
+        Student* s = dynamic_cast<Student*>(people[i]): safely tries  to convert the base person to student
+      74.  if (s && strcmp(s->getId(), id) == 0) {
+            index = i; :if conversion is successful and the student’s id matches the one we want to remove,save the index 
+            break;
+        }
+    }
+
+  
+   79. if (index == -1) {
+        cout << "Student with ID " << id << " not found.\n";
+        return;  :if the student was not found, print a message and exit the functio
+    }
+
+    Delete the student object
+    delete people[index]; ::delete the student object at the found index
+    Person** temp = new Person*[personCount - 1];
+   86. for (int i = 0, j = 0; i < personCount; ++i) {
+             if (i != index)
+                temp[j++] = people[i]; :: create a new ,smaller array of person excluding the removed student
+    }
+Replace old array and reduce count
+    delete[] people; :: delete the old array 
+    people = temp; :: point people to the new array
+    personCount--; : decrease personcount by 1
+
+    cout << "Student removed.\n"; : confirm removal.
+}
+96. Function to input student data and add to the system
+void inputAndAddStudent() {
+    char id[10];
+    int numCourses; ::initialize a variable to hold the student’s id and another to count their courses.
+  
+  cout << "Enter Student ID (max 9 chars): ";
+    cin >> setw(10) >> id; :prompt user to enter student id up to 9 characters
+
+    cout << "Enter number of courses: ";
+    cin >> numCourses; :  enters  number of courses student took
+
+ Create a temporary array of score to hold the courses and marks.
+    Score* scores = new Score[numCourses];
+   106. for (int i = 0; i < numCourses; ++i) {
+        cout << "Enter course name (max 19 chars): "; 
+        cin >> setw(20) >> scores[i].course; :loop through each course ask for the course name(max 19 chars)
+
+   110.     do {
+            cout << "Enter mark (0–100): ";
+            cin >> scores[i].mark;
+            if (scores[i].mark < 0 || scores[i].mark > 100)
+                cout << "Invalid mark. Please try again.\n";
+        } while (scores[i].mark < 0 || scores[i].mark > 100); : repeatedly ask for the course mark between 0 and 100
+    }
+    Function to Create Student object and add
+    Student* s = new Student(id, scores, numCourses);
+    addStudent(s); ::add student to the system
+    delete[] scores; :: delete the temporary scores array ( it’s already copied into student object)
+}
+123. Function to show info of all students
+void showAllStudents() {
+    124. if (personCount == 0) {
+        cout << "No students available.\n";
+        return; means if there are no students ,print a message and exit.
+    }
+
+ 
+    for (int i = 0; i < personCount; ++i)
+        people[i]->showInfo();:: otherwise loop through all people and show info
+}
+133.  Main function with menu
+int main() {
+    int choice; :: define a variable to store the user’s menu choice
+  135.  do {
+        // Menu display
+        cout << "\n--- Student Grading System ---\n";
+        cout << "1. Add Student\n";
+        cout << "2. Remove Student\n";
+        cout << "3. Show All Students\n";
+        cout << "4. Exit\n";
+        cout << "Enter your choice: ";
+        cin >> choice; :: menu display
+
+   Perform action based on user choice
+      144.switch (choice) {
+               case 1:
+                   inputAndAddStudent();
+                    break; : if user selects 1, call the function to input and add a strudent
+        148. case 2: {
+                     char id[10];
+                     cout << "Enter student ID to remove: ";
+                     cin >> setw(10) >> id;
+                      removeStudent(id);
+                      break; : if choice is 2 ask for the student id and call the remove function.
+            }
+            case 3:
+                     showAllStudents();
+                      break; : if choice is 3 , display all students
+            case 4:
+                      cout << "Goodbye!\n";
+                       break; : if choice is 4, exit the program
+            default:
+                       cout << "Invalid choice.\n";
+        }
+    } while (choice != 4);:: if the choice is invalid ,inform the user ,or reapeat the loop until user choses 4.
+Final memory cleanup
+    for (int i = 0; i < personCount; ++i)
+          delete people[i];
+    delete[] people; : after exiting the loop ,delete each student oject and the people array to avoid memory leaks.
+
+    return 0; :: End of the program
+}
+
+As concluding ,this program efficiently manages student records uding object-oriented orinciple allowing user to add, remove and display students while calculating GPA accurately.
